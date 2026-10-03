@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Account{% endblock %}
+{% block content %}
+<section class="auth">
+  <div class="card">
+    {% if login_enabled() %}
+    <h1>Change password</h1>
+    <p class="lead">Other browsers will be logged out. Leave the new password empty to turn off login.</p>
+    {% else %}
+    <h1>Set a password</h1>
+    <p class="lead">Login is off. Set a password to turn it on.</p>
+    {% endif %}
+    <form method="post" class="stack">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {% if login_enabled() %}
+      <label>Current password
+        <input type="password" name="current" autocomplete="current-password" required>
+      </label>
+      {% endif %}
+      <label>New password
+        <input type="password" name="password" autocomplete="new-password">
+      </label>
+      <label>Repeat new password
+        <input type="password" name="confirm" autocomplete="new-password">
+      </label>
+      <button class="primary lg block">Save</button>
+    </form>
+  </div>
+  {% if login_enabled() %}
+  <p class="foot muted">Locked out? Run<br>
+    <code>docker exec -it calibre-typo calibre-typo reset-password</code></p>
+  {% endif %}
+</section>
+{% endblock %}

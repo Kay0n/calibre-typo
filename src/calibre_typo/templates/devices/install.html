@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Install on {{ device.name }}{% endblock %}
+{% block content %}
+<header class="page-head">
+  <a class="back" href="{{ url_for('devices.index') }}">Back to devices</a>
+  <h1>Install on {{ device.name }}</h1>
+</header>
+
+{% if token %}
+{% if not public_url_set %}
+<div class="flash warn">
+  <span><code>CALIBRE_TYPO_PUBLIC_URL</code> isn't set, so the plugin will use <code>{{ server_url }}</code>.
+    If that's wrong, set it, restart, then revoke and reactivate this device.</span>
+</div>
+{% endif %}
+<div class="card">
+  <ol class="steps">
+    <li>
+      <strong>Download the plugin</strong>
+      <p class="muted">Preconfigured for this server and device.</p>
+      <a class="button primary" href="{{ url_for('devices.plugin_zip', device_id=device.id) }}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+        Download plugin</a>
+    </li>
+    <li>
+      <strong>Copy it to your reader</strong>
+      <span class="muted">Unzip and copy <code>calibretypo.koplugin</code> into KOReader's plugins folder:</span>
+      <dl class="paths">
+        <dt>Kindle</dt><dd><code>koreader/plugins/</code></dd>
+        <dt>Kobo</dt><dd><code>.adds/koreader/plugins/</code></dd>
+        <dt>Android</dt><dd><code>koreader/plugins/</code></dd>
+        <dt>PocketBook</dt><dd><code>applications/koreader/plugins/</code></dd>
+      </dl>
+    </li>
+    <li>
+      <strong>Start fixing</strong>
+      <span class="muted">Restart KOReader, select text in an EPUB and choose <b>Fix text</b>.</span>
+    </li>
+  </ol>
+</div>
+
+<details class="card">
+  <summary>Manual setup</summary>
+  <p class="muted">In KOReader, open <b>Tools</b>, then <b>Calibre typo fixes</b>, then <b>Server settings</b></p>
+  <dl class="kv">
+    <dt>Address</dt><dd><code>{{ server_url }}</code></dd>
+    <dt>Device token</dt><dd><code class="token">{{ token }}</code></dd>
+  </dl>
+</details>
+{% elif not device.active %}
+<div class="empty">
+  <strong>Device revoked</strong>
+  <p>Reactivate it for a new download.</p>
+  <a class="button" href="{{ url_for('devices.index') }}">Go to Devices</a>
+</div>
+{% else %}
+<div class="empty">
+  <strong>Download expired</strong>
+  <p>Revoke and reactivate the device for a new one.</p>
+  <a class="button" href="{{ url_for('devices.index') }}">Go to Devices</a>
+</div>
+{% endif %}
+{% endblock %}

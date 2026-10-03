@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Set up{% endblock %}
+{% block content %}
+<section class="auth">
+  <div class="card">
+    <h1>Set up Calibre Typo</h1>
+    <p class="lead">Choose the admin password, or leave it empty to turn off login
+      (for use behind a proxy that handles sign-in).</p>
+    <form method="post" class="stack">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>Password
+        <input type="password" name="password" autocomplete="new-password" autofocus>
+      </label>
+      <label>Repeat password
+        <input type="password" name="confirm" autocomplete="new-password">
+      </label>
+      <button class="primary lg block">Finish setup</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

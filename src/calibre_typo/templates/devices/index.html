@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Devices{% endblock %}
+{% block content %}
+<header class="page-head">
+  <h1>Devices</h1>
+</header>
+
+<form method="post" class="card inline-form">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <label>Name
+    <input name="name" placeholder="e.g. Kindle, Phone" maxlength="60" required>
+  </label>
+  <button class="primary">Add device</button>
+</form>
+
+{% if devices %}
+<h2>Your devices</h2>
+<div class="list">
+  {% for d in devices %}
+    <div class="list-item {{ 'quiet' if not d.active }}">
+      <div class="main">
+        <div class="title">{{ d.name }}</div>
+        <div class="sub">Last sync {{ (d.last_seen_at | short_time) or 'never' }} · added {{ d.created_at | short_time }}</div>
+        <div class="badges">
+          {% if not d.active %}<span class="badge danger">revoked</span>{% endif %}
+          {% if d.plugin_version %}<span class="badge">plugin {{ d.plugin_version }}</span>{% endif %}
+          {% if d.plugin_version and d.plugin_version != latest_plugin %}
+            <span class="badge warn">update to {{ latest_plugin }}</span>{% endif %}
+        </div>
+      </div>
+      <div class="actions">
+        {% if d.active %}
+        <form method="post" action="{{ url_for('devices.revoke', device_id=d.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="sm danger">Revoke</button>
+        </form>
+        {% else %}
+        <form method="post" action="{{ url_for('devices.reactivate', device_id=d.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="sm" title="Issues a new token and plugin download">Reactivate</button>
+        </form>
+        <form method="post" action="{{ url_for('devices.delete', device_id=d.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="sm danger">Delete</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

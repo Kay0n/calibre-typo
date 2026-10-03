@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Unmatched fixes{% endblock %}
+{% block content %}
+<header class="page-head">
+  <a class="back" href="{{ url_for('review.index') }}">Back to books</a>
+  <h1>Unmatched fixes</h1>
+  <p>Pick the book each fix belongs to.</p>
+</header>
+
+{% if edits %}
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  {% for e in edits %}
+    <article class="card fix">
+      <div class="fix-body">
+        <div class="fix-meta">
+          <b>{{ e.book_title or 'Unknown title' }}</b>
+          <span class="muted">{{ [e.book_authors, e.filename] | select | join(" · ") }}</span>
+        </div>
+        <p class="passage">{% if e.ctx_before %}<span class="context">…{{ e.ctx_before }}</span>{% endif %}{{ e.original | word_diff(e.replacement) }}{% if e.ctx_after %}<span class="context">{{ e.ctx_after }}…</span>{% endif %}</p>
+      </div>
+      <div class="fix-foot">
+        <div class="book-picker">
+          <input type="search" placeholder="Search books…" aria-label="Search books" hidden>
+          <select name="book-{{ e.id }}" size="6" aria-label="Book">
+            {% if suggestions[e.id] %}
+            <optgroup label="Suggested">
+              {% for b in suggestions[e.id] %}<option value="{{ b.id }}">{{ b.title }}{% if b.authors %} by {{ b.authors }}{% endif %}</option>{% endfor %}
+            </optgroup>
+            {% endif %}
+            <optgroup label="All books">
+              {% for b in books %}<option value="{{ b.id }}">{{ b.title }}{% if b.authors %} by {{ b.authors }}{% endif %}</option>{% endfor %}
+            </optgroup>
+          </select>
+        </div>
+        <label class="check"><input type="checkbox" name="discard-{{ e.id }}" value="1"> Discard</label>
+      </div>
+    </article>
+  {% endfor %}
+  <div class="actionbar">
+    <span class="spacer"></span>
+    <button class="primary">Save</button>
+  </div>
+</form>
+{% else %}
+  <div class="empty">
+    <strong>Nothing unmatched</strong>
+  </div>
+{% endif %}
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='book-picker.js') }}" defer></script>{% endblock %}

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Books{% endblock %}
+{% block content %}
+<header class="page-head">
+  <h1>Books</h1>
+</header>
+
+{% if unmatched %}
+  <div class="flash">
+    <span>{{ unmatched | fixes }} not matched to a book</span>
+    <span class="spacer"></span>
+    <a class="button sm" href="{{ url_for('review.unmatched') }}">Assign them</a>
+  </div>
+{% endif %}
+
+{% if summaries %}
+<div class="list">
+  {% for s in summaries %}
+    <a class="list-item {{ 'quiet' if not (s.pending or s.failed) }}" href="{{ url_for('review.book', book_id=s.book_id) }}">
+      <div class="main">
+        <div class="title">{{ s.title }}</div>
+        <div class="sub">{{ s.authors }}{% if s.last_received %} · last fix {{ s.last_received | short_time }}{% endif %}</div>
+      </div>
+      <div class="badges">
+        {% if s.pending %}<span class="badge accent">{{ s.pending }} to review</span>{% endif %}
+        {% if s.failed %}<span class="badge danger">{{ s.failed }} failed</span>{% endif %}
+        {% if s.applied %}<span class="badge">{{ s.applied }} applied</span>{% endif %}
+      </div>
+      <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+    </a>
+  {% endfor %}
+</div>
+{% elif not unmatched %}
+<div class="empty">
+  <div class="icon"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+  <strong>No fixes yet</strong>
+  <p>Select text in KOReader and choose <b>Fix text</b>.</p>
+  <a class="button primary" href="{{ url_for('devices.index') }}">Set up a device</a>
+</div>
+{% endif %}
+{% endblock %}

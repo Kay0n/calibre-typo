@@ -1,0 +1,14 @@
+.git
+.github
+.dev
+.devenv*
+.venv
+.pytest_cache
+**/__pycache__
+tests
+devenv.nix
+.dockerignore
+.gitignore
+Dockerfile
+docker-compose*.yml
+devenv.lock

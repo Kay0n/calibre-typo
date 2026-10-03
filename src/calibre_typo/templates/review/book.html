@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}{{ book.title }}{% endblock %}
+{% block content %}
+{% set open_items = items | selectattr('is_open') | list %}
+{% set closed_items = items | rejectattr('is_open') | list %}
+
+<header class="page-head">
+  <a class="back" href="{{ url_for('review.index') }}">Back to books</a>
+  <h1>{{ book.title }}</h1>
+  <p>{{ book.authors }}</p>
+</header>
+
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  {% if open_items %}<h2>To review · {{ open_items | length }}</h2>{% endif %}
+
+  {% for item in open_items %}
+    {% set e = item.edit %}
+    <article class="card fix">
+      <div class="fix-body">
+        {% if item.preview %}
+          <p class="passage">
+            <span class="context">…{{ item.preview.before }}</span>{{ item.preview.current | word_diff(e.replacement) }}<span class="context">{{ item.preview.after }}…</span>
+          </p>
+        {% else %}
+          <p class="passage">
+            <span class="context">…{{ e.ctx_before }}</span>{{ e.original | word_diff(e.replacement) }}<span class="context">{{ e.ctx_after }}…</span>
+          </p>
+        {% endif %}
+
+        {% if e.status == 'failed' %}<p class="alert-line">⚠ Failed: {{ e.error }}</p>{% endif %}
+
+        <div class="fix-meta">
+          <span class="muted">#{{ e.id }} · {{ e.device_name or 'deleted device' }} · {{ (e.created_at or e.received_at) | short_time }}</span>
+          {% if item.preview %}
+            <span class="badge">{{ item.preview.location.method | match_label }}</span>
+            {% if item.preview.current | normalize != e.original | normalize %}
+              <span class="badge warn">library text differs slightly</span>
+            {% endif %}
+          {% else %}
+            <span class="badge warn">{{ item.problem }}</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="fix-foot">
+        <details class="edit">
+          <summary>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+            Edit replacement
+          </summary>
+          <textarea name="replacement-{{ e.id }}" rows="3">{{ e.replacement }}</textarea>
+        </details>
+        <fieldset class="segmented" aria-label="Decision for fix #{{ e.id }}">
+          <label><input type="radio" name="decision-{{ e.id }}" value="approve" {{ 'checked' if item.preview }} {{ 'disabled' if not item.preview }}><span>Approve</span></label>
+          <label><input type="radio" name="decision-{{ e.id }}" value="reject"><span>Reject</span></label>
+          <label><input type="radio" name="decision-{{ e.id }}" value="later" {{ 'checked' if not item.preview }}><span>Later</span></label>
+        </fieldset>
+      </div>
+    </article>
+  {% endfor %}
+
+  {% if open_items %}
+    <div class="actionbar">
+      <span class="muted">Approved fixes are written to the EPUB. A backup is kept.</span>
+      <button class="primary">Save</button>
+    </div>
+  {% else %}
+    <div class="empty">
+      <strong>Nothing to review</strong>
+    </div>
+  {% endif %}
+
+  {% if closed_items %}
+    <h2>History</h2>
+    {% for item in closed_items %}
+      {% set e = item.edit %}
+      <article class="card fix done">
+        <div class="fix-body">
+          <p class="passage">{{ e.original | word_diff(e.replacement) }}</p>
+          <div class="badges">
+            <span class="badge {{ 'ok' if e.status == 'applied' else 'danger' if e.status == 'rejected' }}">{{ e.status }}{% if e.applied_at %} · {{ e.applied_at | short_time }}{% endif %}</span>
+            <span class="muted small">#{{ e.id }} · {{ e.device_name or 'deleted device' }}</span>
+          </div>
+          {% if e.status == 'rejected' %}
+            <button class="sm" name="reopen" value="{{ e.id }}">Reopen</button>
+          {% endif %}
+        </div>
+      </article>
+    {% endfor %}
+  {% endif %}
+</form>
+{% endblock %}

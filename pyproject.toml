@@ -1,0 +1,39 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "calibre-typo"
+dynamic = ["version"]
+description = "Fix typos in your Calibre library straight from KOReader."
+readme = "README.md"
+license = "MIT"
+authors = [{ name = "Kayon" }]
+requires-python = ">=3.11"
+dependencies = [
+    "flask>=3.0",
+    "waitress>=3.0",
+]
+
+[project.urls]
+Source = "https://github.com/Kay0n/calibre-typo"
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
+[project.scripts]
+calibre-typo = "calibre_typo.cli:main"
+
+[tool.hatch.version]
+path = "src/calibre_typo/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/calibre_typo"]
+
+# The server hands out the KOReader plugin, so it ships inside the package
+[tool.hatch.build.targets.wheel.force-include]
+"koreader/calibretypo.koplugin" = "calibre_typo/koplugin/calibretypo.koplugin"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

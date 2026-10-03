@@ -1,0 +1,29 @@
+# calibre-typo next to Calibre-Web-Automated, sharing its library
+services:
+  calibre-web-automated:
+    image: crocodilestick/calibre-web-automated:latest
+    environment:
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - ./cwa/config:/config
+      - ./cwa/ingest:/cwa-book-ingest
+      - ./cwa/library:/calibre-library
+    ports:
+      - "127.0.0.1:8083:8083"
+    restart: unless-stopped
+
+  calibre-typo:
+    image: ghcr.io/kay0n/calibre-typo:latest
+    container_name: calibre-typo
+    environment:
+      - PUID=1000                 # same user as the library files
+      - PGID=1000
+      # Written into plugin downloads: the address devices use
+      - CALIBRE_TYPO_PUBLIC_URL=https://typo.example.com
+    volumes:
+      - ./calibre-typo:/data
+      - ./cwa/library:/calibre-library
+    ports:
+      - "127.0.0.1:8090:8090"
+    restart: unless-stopped
