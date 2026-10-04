@@ -6,6 +6,14 @@
 </header>
 
 <div class="settings">
+  <h2>Fixes</h2>
+  <form method="post" action="{{ url_for('settings.auto_apply') }}" class="card stack">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label class="check"><input type="checkbox" name="auto_apply" {{ 'checked' if auto_apply }}> Apply fixes automatically</label>
+    <p class="muted">When a fix matches a library book and its text is found, it's written to the EPUB without review</p>
+    <div class="row"><button>Save</button></div>
+  </form>
+
   <h2>Password</h2>
   <form method="post" action="{{ url_for('settings.password') }}" class="card stack">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

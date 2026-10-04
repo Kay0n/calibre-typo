@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 
-from ..services import admin
+from ..services import admin, preferences
 from ..state import get_state
 from .auth import _new_password_problem
 from .security import log_in, login_required
@@ -13,7 +13,19 @@ bp = Blueprint("settings", __name__, url_prefix="/settings")
 @bp.get("/")
 @login_required
 def index():
-    return render_template("settings/index.html")
+    with get_state().db.connect() as conn:
+        auto_apply = preferences.auto_apply_enabled(conn)
+    return render_template("settings/index.html", auto_apply=auto_apply)
+
+
+@bp.post("/auto-apply")
+@login_required
+def auto_apply():
+    enabled = request.form.get("auto_apply") == "on"
+    with get_state().db.connect() as conn:
+        preferences.set_auto_apply(conn, enabled)
+    flash("Auto-apply on" if enabled else "Auto-apply off", "success")
+    return redirect(url_for("settings.index"))
 
 
 @bp.post("/password")

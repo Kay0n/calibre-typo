@@ -241,3 +241,53 @@ def test_missing_library_gives_a_clear_error(admin_client, client, library_dir):
     page = admin_client.get("/")
     assert page.status_code == 503 and b"No Calibre library at" in page.data
     assert client.post("/api/v1/edits", json={"edits": [FIX]}, headers=bearer(token)).status_code == 503
+
+
+def turn_on_auto_apply(admin_client):
+    admin_client.post("/settings/auto-apply", data={"csrf_token": csrf(admin_client), "auto_apply": "on"})
+
+
+def statuses(settings):
+    return dict(sqlite3.connect(settings.database_path).execute("SELECT uid, status FROM edits"))
+
+
+def test_auto_apply_toggle(admin_client):
+    turn_on_auto_apply(admin_client)
+    assert b'name="auto_apply" checked' in admin_client.get("/settings/").data
+    admin_client.post("/settings/auto-apply", data={"csrf_token": csrf(admin_client)})
+    assert b'name="auto_apply" checked' not in admin_client.get("/settings/").data
+
+
+def test_auto_apply_writes_matched_fixes(admin_client, client, settings, epub_path):
+    _, token = add_device(admin_client)
+    turn_on_auto_apply(admin_client)
+    response = client.post("/api/v1/edits", json={"edits": [FIX]}, headers=bearer(token))
+    assert response.get_json()["accepted"] == ["fix-1"]
+
+    assert statuses(settings) == {"fix-1": "applied"}
+    with zipfile.ZipFile(epub_path) as z:
+        assert "A non-dead human strolled into the lobby" in z.read("OEBPS/text/ch1.xhtml").decode()
+    assert len(list((settings.backups_dir / "1").glob("*.epub"))) == 1
+
+    # A retry is acknowledged without applying anything again
+    client.post("/api/v1/edits", json={"edits": [FIX]}, headers=bearer(token))
+    assert len(list((settings.backups_dir / "1").glob("*.epub"))) == 1
+
+
+def test_auto_apply_is_off_by_default(admin_client, client, settings):
+    _, token = add_device(admin_client)
+    client.post("/api/v1/edits", json={"edits": [FIX]}, headers=bearer(token))
+    assert statuses(settings) == {"fix-1": "pending"}
+
+
+def test_auto_apply_leaves_unfound_and_unmatched_fixes_for_review(admin_client, client, settings):
+    _, token = add_device(admin_client)
+    turn_on_auto_apply(admin_client)
+    unfound = dict(FIX, uid="unfound", original="nowhere in the book", context_before="", context_after="",
+                   xpointer=None)
+    stray = dict(FIX, uid="stray", title="Some Web Novel", identifiers="", authors="Anon")
+    client.post("/api/v1/edits", json={"edits": [unfound, stray]}, headers=bearer(token))
+
+    assert statuses(settings) == {"unfound": "pending", "stray": "pending"}
+    assert not (settings.backups_dir / "1").exists()
+    assert b"1 fix not matched to a book" in admin_client.get("/").data

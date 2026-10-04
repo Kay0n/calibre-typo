@@ -34,11 +34,17 @@ def _text(item: Mapping[str, Any], key: str) -> str | None:
     return value if isinstance(value, str) else None
 
 
+@dataclass(frozen=True)
+class Received:
+    accepted: list[str]
+    new_ids: list[int]
+
+
 def receive(conn: sqlite3.Connection, library: CalibreLibrary, device_id: int,
-            submitted: Iterable[Mapping[str, Any]]) -> list[str]:
+            submitted: Iterable[Mapping[str, Any]]) -> Received:
     """Re-sent uids are acknowledged, not duplicated, so devices can retry. Bad fields
     are dropped, as failing the request would block the device's queue"""
-    accepted = []
+    accepted, new_ids = [], []
     for item in submitted:
         uid = (_text(item, "uid") or "").strip()
         original, replacement = _text(item, "original"), _text(item, "replacement")
@@ -48,7 +54,7 @@ def receive(conn: sqlite3.Connection, library: CalibreLibrary, device_id: int,
             title, authors = _text(item, "title"), _text(item, "authors")
             identifiers, filename = _text(item, "identifiers"), _text(item, "filename")
             book_id = library.match(title=title, authors=authors, identifiers=identifiers, filename=filename)
-            conn.execute(
+            cur = conn.execute(
                 """INSERT INTO edits (uid, device_id, created_at, received_at, book_id, book_title,
                        book_authors, identifiers, filename, xpointer, original, replacement,
                        ctx_before, ctx_after)
@@ -57,8 +63,9 @@ def receive(conn: sqlite3.Connection, library: CalibreLibrary, device_id: int,
                  identifiers, filename, _text(item, "xpointer"), original, replacement,
                  _text(item, "context_before") or "", _text(item, "context_after") or ""),
             )
+            new_ids.append(cur.lastrowid)
         accepted.append(uid)
-    return accepted
+    return Received(accepted, new_ids)
 
 
 def release_missing_books(conn: sqlite3.Connection, book_ids: set[int]) -> None:
@@ -93,6 +100,16 @@ def for_book(conn: sqlite3.Connection, book_id: int) -> list[sqlite3.Row]:
          WHERE e.book_id = ?
          ORDER BY e.status IN ('applied', 'rejected'), e.id
     """, (book_id,)).fetchall()
+
+
+def pending_by_book(conn: sqlite3.Connection, edit_ids: Iterable[int]) -> dict[int, list[int]]:
+    by_book: dict[int, list[int]] = {}
+    for edit_id in edit_ids:
+        row = conn.execute("SELECT book_id FROM edits WHERE id = ? AND status = 'pending' "
+                           "AND book_id IS NOT NULL", (edit_id,)).fetchone()
+        if row:
+            by_book.setdefault(row["book_id"], []).append(edit_id)
+    return by_book
 
 
 def unmatched(conn: sqlite3.Connection) -> list[sqlite3.Row]:

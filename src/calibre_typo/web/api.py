@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from flask import Blueprint, g, jsonify, request
 
-from ..services import edits
+from ..services import edits, preferences, review
 from ..state import get_state
 from .security import device_required
 
@@ -32,5 +32,8 @@ def submit_edits():
 
     state = get_state()
     with state.db.connect() as conn:
-        accepted = edits.receive(conn, state.library, g.device.id, submitted)
-    return _envelope(accepted=accepted)
+        received = edits.receive(conn, state.library, g.device.id, submitted)
+        auto = preferences.auto_apply_enabled(conn)
+    if auto and received.new_ids:
+        review.auto_apply(state.db, state.library, state.settings.backups_dir, received.new_ids)
+    return _envelope(accepted=received.accepted)
