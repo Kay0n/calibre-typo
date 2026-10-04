@@ -120,7 +120,6 @@ code {
   color: var(--accent-fg);
 }
 .topbar nav { display: flex; align-items: center; gap: 0.25rem; margin-left: auto; overflow-x: auto; scrollbar-width: none; }
-.topbar nav form { margin: 0; }
 .nav-link {
   padding: 0.35rem 0.75rem;
   border-radius: 999px;
@@ -362,7 +361,10 @@ dl.kv dd { margin: 0; }
 .auth .card { padding: 1.75rem; box-shadow: var(--shadow-lg); }
 .auth h1 { font-size: 1.4rem; margin-bottom: 0.35rem; }
 .auth .lead { color: var(--muted); margin-bottom: 1.25rem; }
-.auth .foot { text-align: center; margin-top: 1.25rem; font-size: 0.88em; }
+.settings { max-width: 32rem; }
+.settings h2:first-child { margin-top: 0; }
+.settings .stack p { margin: 0; }
+
 
 label { display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.9em; font-weight: 500; }
 input, select, textarea {

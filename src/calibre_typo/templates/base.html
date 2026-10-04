@@ -19,13 +19,7 @@
       <nav>
         <a class="nav-link {{ 'active' if request.blueprint == 'review' }}" href="{{ url_for('review.index') }}">Books</a>
         <a class="nav-link {{ 'active' if request.blueprint == 'devices' }}" href="{{ url_for('devices.index') }}">Devices</a>
-        <a class="nav-link {{ 'active' if request.endpoint == 'auth.account' }}" href="{{ url_for('auth.account') }}">Account</a>
-        {% if login_enabled() %}
-        <form method="post" action="{{ url_for('auth.logout') }}">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button class="ghost sm">Log out</button>
-        </form>
-        {% endif %}
+        <a class="nav-link {{ 'active' if request.blueprint == 'settings' }}" href="{{ url_for('settings.index') }}">Settings</a>
       </nav>
       {% endif %}
     </div>

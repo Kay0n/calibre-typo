@@ -4,13 +4,13 @@ from flask import Flask, jsonify, render_template, request
 
 from ..epub import normalize
 from ..library import LibraryUnavailable
-from . import api, auth, devices, review
+from . import api, auth, devices, review, settings
 from .filters import fixes, match_label, short_time, word_diff
 from .security import check_csrf, csrf_token, is_logged_in, login_enabled
 
 
 def register(app: Flask) -> None:
-    for blueprint in (auth.bp, review.bp, devices.bp, api.bp):
+    for blueprint in (auth.bp, review.bp, devices.bp, settings.bp, api.bp):
         app.register_blueprint(blueprint)
 
     app.before_request(check_csrf)

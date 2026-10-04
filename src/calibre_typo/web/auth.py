@@ -86,23 +86,3 @@ def logout():
     log_out()
     return redirect(url_for("auth.login"))
 
-
-@bp.route("/account", methods=["GET", "POST"])
-@login_required
-def account():
-    if request.method == "POST":
-        state = get_state()
-        password, confirm = request.form.get("password", ""), request.form.get("confirm", "")
-        with state.db.connect() as conn:
-            current_ok = admin.verify_password(conn, request.form.get("current", ""))
-        if not current_ok:
-            flash("Wrong current password", "error")
-        elif problem := _new_password_problem(password, confirm):
-            flash(problem, "error")
-        else:
-            with state.db.connect() as conn:
-                admin.set_password(conn, password)
-            log_in()  # set_password ended every session, this one included
-            flash("Password changed" if password else "Login turned off", "success")
-            return redirect(url_for("auth.account"))
-    return render_template("auth/account.html")

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<header class="page-head">
+  <h1>Settings</h1>
+</header>
+
+<div class="settings">
+  <h2>Password</h2>
+  <form method="post" action="{{ url_for('settings.password') }}" class="card stack">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% if login_enabled() %}
+    <p class="muted">Other browsers will be logged out</p>
+    <label>Current password
+      <input type="password" name="current" autocomplete="current-password" required>
+    </label>
+    {% else %}
+    <p class="muted">Login is off. Set a password to turn it on</p>
+    {% endif %}
+    <label>New password
+      <input type="password" name="password" autocomplete="new-password">
+    </label>
+    <label>Repeat new password
+      <input type="password" name="confirm" autocomplete="new-password">
+    </label>
+    <div class="row"><button class="primary">{{ 'Change password' if login_enabled() else 'Set password' }}</button></div>
+    {% if login_enabled() %}
+    <p class="muted small">Locked out? Run
+      <code>docker exec -it calibre-typo calibre-typo reset-password</code></p>
+    {% endif %}
+  </form>
+
+  {% if login_enabled() %}
+  <h2>Session</h2>
+  <form method="post" action="{{ url_for('auth.logout') }}" class="card row">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <span class="muted">Log out of this browser</span>
+    <span class="spacer"></span>
+    <button>Log out</button>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

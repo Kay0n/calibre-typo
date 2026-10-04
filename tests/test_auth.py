@@ -29,7 +29,7 @@ def test_empty_password_turns_login_off(app, client):
 
 def test_setting_a_password_turns_login_back_on(app, client):
     client.post("/setup", data={"csrf_token": csrf(client), "password": "", "confirm": ""})
-    client.post("/account", data={"csrf_token": csrf(client), "password": ADMIN_PASSWORD, "confirm": ADMIN_PASSWORD})
+    client.post("/settings/password", data={"csrf_token": csrf(client), "password": ADMIN_PASSWORD, "confirm": ADMIN_PASSWORD})
     assert app.test_client().get("/").status_code == 302
     assert client.get("/").status_code == 200  # the browser that set it stays logged in
 
@@ -45,6 +45,13 @@ def test_setup_can_only_be_claimed_once(app, admin_client):
 def test_setup_logs_in_and_closes_setup(admin_client):
     assert admin_client.get("/").status_code == 200
     assert admin_client.get("/setup").headers["Location"].endswith("/login")
+
+
+def test_settings_page_has_password_and_logout(admin_client):
+    page = admin_client.get("/settings/").data
+    assert b"Change password" in page
+    assert b"reset-password" in page
+    assert b'action="/logout"' in page
 
 
 def test_login_and_logout(app, admin_client):
@@ -110,7 +117,7 @@ def test_password_change_signs_out_other_sessions(app, admin_client):
     assert other.get("/").status_code == 200
 
     new_password = "an even longer password"
-    admin_client.post("/account", data={"csrf_token": csrf(admin_client), "current": ADMIN_PASSWORD,
+    admin_client.post("/settings/password", data={"csrf_token": csrf(admin_client), "current": ADMIN_PASSWORD,
                                         "password": new_password, "confirm": new_password})
     assert admin_client.get("/").status_code == 200
     assert other.get("/").status_code == 302
