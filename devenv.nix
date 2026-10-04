@@ -52,6 +52,28 @@ in
       [ -f "$CALIBRE_TYPO_LIBRARY/metadata.db" ] || sample-library
       calibre-typo serve
     '';
+    # Reachable from LAN. Opens the port in NixOS firewall
+    runOnLan.exec = ''
+      port="''${CALIBRE_TYPO_PORT:-8090}"
+      ip=$(ip -4 route get 1.1.1.1 | sed -nE 's/.* src ([0-9.]+).*/\1/p')
+      if [ -z "$ip" ]; then
+        echo "Couldn't find this machine's LAN address" >&2
+        exit 1
+      fi
+      rule=(nixos-fw -p tcp --dport "$port" -j nixos-fw-accept)
+      sudo iptables -I "''${rule[@]}" || exit 1
+      sudo ip6tables -I "''${rule[@]}" 2>/dev/null
+      close() {
+        sudo iptables -D "''${rule[@]}"
+        sudo ip6tables -D "''${rule[@]}" 2>/dev/null
+        echo "Closed port $port"
+      }
+      trap close EXIT
+      trap 'exit 130' INT TERM
+      echo "Opened port $port, open http://$ip:$port on your devices"
+      [ -f "$CALIBRE_TYPO_LIBRARY/metadata.db" ] || sample-library
+      CALIBRE_TYPO_HOST=0.0.0.0 CALIBRE_TYPO_PUBLIC_URL="http://$ip:$port" calibre-typo serve
+    '';
     tests.exec = ''pytest "$@"'';
     sample-library.exec = ''python "$DEVENV_ROOT/tests/sample_library.py" "$CALIBRE_TYPO_LIBRARY"'';
     reset-dev.exec = ''rm -rf "${devDir}" && echo "Removed ${devDir}"'';
@@ -84,6 +106,7 @@ in
   enterShell = ''
     echo "calibre-typo dev shell"
     echo "  run             start the server on http://127.0.0.1:8090 (sample library in .dev/)"
+    echo "  runOnLan        same, reachable from your LAN (opens the port with sudo until stopped)"
     echo "  tests           run the test suite, including the KOReader plugin harness"
     echo "  reset-dev       delete the sample library and app data"
     echo "  bumpVersion 1.2.3        set the server version"
