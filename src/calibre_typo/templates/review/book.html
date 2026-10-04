@@ -55,7 +55,6 @@
         <fieldset class="segmented" aria-label="Decision for fix #{{ e.id }}">
           <label><input type="radio" name="decision-{{ e.id }}" value="approve" {{ 'checked' if item.preview }} {{ 'disabled' if not item.preview }}><span>Approve</span></label>
           <label><input type="radio" name="decision-{{ e.id }}" value="reject"><span>Reject</span></label>
-          <label><input type="radio" name="decision-{{ e.id }}" value="later" {{ 'checked' if not item.preview }}><span>Later</span></label>
         </fieldset>
       </div>
     </article>
@@ -63,7 +62,7 @@
 
   {% if open_items %}
     <div class="actionbar">
-      <span class="muted">Approved fixes are written to the EPUB. A backup is kept.</span>
+      <span class="muted">Approved fixes are written to the EPUB. A backup is kept. Fixes with neither selected stay here.</span>
       <button class="primary">Save</button>
     </div>
   {% else %}
@@ -92,3 +91,4 @@
   {% endif %}
 </form>
 {% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='review.js') }}" defer></script>{% endblock %}

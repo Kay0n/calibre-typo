@@ -154,6 +154,17 @@ def test_edited_replacement_and_reject(admin_client, client, settings, epub_path
     assert statuses == {"fix-1": "rejected", "fix-2": "applied"}
 
 
+def test_undecided_fix_stays_pending_with_edit(admin_client, client, settings):
+    _, token = add_device(admin_client)
+    client.post("/api/v1/edits", json={"edits": [FIX]}, headers=bearer(token))
+    edit_id = sqlite3.connect(settings.database_path).execute("SELECT id FROM edits").fetchone()[0]
+
+    admin_client.post("/books/1", data={"csrf_token": csrf(admin_client),
+                                        f"replacement-{edit_id}": "A non-dead human ambled into the lobby"})
+    row = sqlite3.connect(settings.database_path).execute("SELECT status, replacement FROM edits").fetchone()
+    assert row == ("pending", "A non-dead human ambled into the lobby")
+
+
 def test_unmatched_fix_can_be_assigned(admin_client, client, settings):
     _, token = add_device(admin_client)
     stray = dict(FIX, uid="stray", title="Some Web Novel", identifiers="", authors="Anon")

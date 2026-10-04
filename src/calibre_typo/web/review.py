@@ -47,17 +47,17 @@ def decide(book_id: int):
 
     approve, reject = [], []
     with state.db.connect() as conn:
-        for key, decision in request.form.items():
-            edit_id = key.removeprefix("decision-")
-            if not key.startswith("decision-") or not edit_id.isdigit():
+        # Fixes without a decision stay pending, but keep any edited replacement
+        for key, value in request.form.items():
+            field, _, edit_id = key.partition("-")
+            if not edit_id.isdigit():
                 continue
             edit_id = int(edit_id)
-            replacement = request.form.get(f"replacement-{edit_id}")
-            if replacement is not None:
-                edits.set_replacement(conn, book_id, edit_id, replacement)
-            if decision == "approve":
+            if field == "replacement":
+                edits.set_replacement(conn, book_id, edit_id, value)
+            elif field == "decision" and value == "approve":
                 approve.append(edit_id)
-            elif decision == "reject":
+            elif field == "decision" and value == "reject":
                 reject.append(edit_id)
         edits.reject(conn, book_id, reject)
 
