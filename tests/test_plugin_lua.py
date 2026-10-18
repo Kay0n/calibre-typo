@@ -85,5 +85,6 @@ def test_plugin_end_to_end(tmp_path, live_server, redirector):
 
     rows = sqlite3.connect(settings.database_path).execute(
         "SELECT book_id, original, replacement, ctx_before, ctx_after FROM edits").fetchall()
-    assert rows == [(1, "walked", "strolled", "A non-dead human ", " into the lobby")]
+    assert rows == [(1, "walked", "strolled", "A non-dead human ", " into the lobby"),
+                    (1, "walkd", "walked", "A non-dead human ", " into the lobby")]
     assert b"<del>walked</del><ins>strolled</ins>" in browser.get("/books/1").data

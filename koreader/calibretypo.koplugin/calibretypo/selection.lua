@@ -13,6 +13,16 @@ function Selection.fromHighlight(highlight, index)
     return { text = source.text, pos0 = source.pos0, pos1 = source.pos1 }
 end
 
+function Selection.fromDictPopup(dict_popup)
+    local highlight = dict_popup.highlight
+    local source = highlight and highlight.selected_text
+    if not source or not source.text or source.text == ""
+        or type(source.pos0) ~= "string" or type(source.pos1) ~= "string" then
+        return nil
+    end
+    return { text = source.text, pos0 = source.pos0, pos1 = source.pos1 }
+end
+
 local function textBetween(document, from, to)
     local text = document:getTextFromXPointers(from, to)
     if type(text) == "table" then

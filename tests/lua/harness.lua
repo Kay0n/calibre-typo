@@ -133,8 +133,12 @@ local highlight = { buttons = {}, closed = false }
 function highlight:addToHighlightDialog(id, fn) self.buttons[id] = fn end
 function highlight:onClose() self.closed = true end
 
+local dictionary = { buttons = {} }
+function dictionary:addToDictButtons(spec) self.buttons[spec.id] = spec end
+
 local main_menu = {}
 local ui = {
+    dictionary = dictionary,
     document = document,
     doc_props = { title = "Fugitive Telemetry", authors = "Martha Wells" },
     rolling = {},
@@ -169,7 +173,23 @@ make_button(highlight, nil).callback()
 shown[#shown].buttons[1][2].callback()
 check(require("calibretypo/queue").count() == 0, "unchanged text not queued")
 
--- 3. Server settings: Address, Device token, Test connection
+-- 3. A single word opens the dictionary, which also offers "Fix text"
+local dict_button = dictionary.buttons["calibretypo_fix"]
+check(dict_button, "dictionary button registered")
+check(not dict_button.show_func({}), "dictionary button hidden for a typed lookup")
+local word_popup = { highlight = { selected_text = { text = "walkd", pos0 = POS0, pos1 = POS1 } } }
+check(not dict_button.show_func({ is_wiki = true, highlight = word_popup.highlight }), "dictionary button hidden on Wikipedia")
+check(dict_button.show_func(word_popup), "dictionary button shown for a word in the book")
+function word_popup:onClose() self.closed = true end
+dict_button.callback(word_popup)
+check(word_popup.closed, "dictionary popup closed")
+local word_dialog = shown[#shown]
+check(word_dialog.kind == "InputDialog" and word_dialog.input == "walkd", "edit dialog prefilled with the word")
+word_dialog.typed = "walked"
+word_dialog.buttons[1][2].callback()
+check(lastMessage():find("Sent 1 fix", 1, true), "word fix was sent: " .. lastMessage())
+
+-- 4. Server settings: Address, Device token, Test connection
 local items = main_menu.calibretypo.sub_item_table
 local server_items = items[3].sub_item_table
 local edit_address, edit_token, test_connection =
@@ -188,7 +208,7 @@ end
 test_connection()
 check(lastMessage():find("Connected as “Harness”", 1, true), "test connection: " .. lastMessage())
 
--- 4. A bad token is reported, and fixes stay queued
+-- 5. A bad token is reported, and fixes stay queued
 typeInto(edit_token, "ctd_wrong")
 check(settings.calibretypo_token == "ctd_wrong", "typed token stored")
 test_connection()
@@ -201,7 +221,7 @@ check(require("calibretypo/queue").count() == 1, "fix kept while server refuses 
 items[1].callback()
 check(lastMessage():find("Send failed: Invalid token", 1, true), "bad token on send: " .. lastMessage())
 
--- 5. Token: never shown, kept on an empty save, not stored if same as the download's
+-- 6. Token: never shown, kept on an empty save, not stored if same as the download's
 edit_token()
 local token_dialog = shown[#shown]
 check(token_dialog.input == "", "token not shown")
@@ -211,13 +231,13 @@ check(settings.calibretypo_token == "ctd_wrong", "empty save keeps the current t
 typeInto(edit_token, bundled_token)
 check(settings.calibretypo_token == nil and Settings.token() == bundled_token, "token matching the download not stored")
 
--- 6. An unreachable address is reported
+-- 7. An unreachable address is reported
 typeInto(edit_address, "http://127.0.0.1:9")
 check(settings.calibretypo_server == "http://127.0.0.1:9", "typed address stored")
 test_connection()
 check(lastMessage():find("Couldn't connect: ", 1, true), "unreachable: " .. lastMessage())
 
--- 7. A redirecting address says where to, when testing and sending
+-- 8. A redirecting address says where to, when testing and sending
 typeInto(edit_address, redirecting_address)
 test_connection()
 check(lastMessage():find("Redirects to " .. bundled_server, 1, true), "redirect: " .. lastMessage())

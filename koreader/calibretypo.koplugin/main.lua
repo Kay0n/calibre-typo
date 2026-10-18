@@ -20,6 +20,7 @@ local VERSION = require("calibretypo/version")
 
 local CONTEXT_WORDS = 12
 local HIGHLIGHT_BUTTON_ID = "12_calibretypo"
+local DICT_BUTTON_ID = "calibretypo_fix"
 local UPDATE_NOTICE_KEY = "calibretypo_update_notice"
 
 local CalibreTypo = WidgetContainer:extend{
@@ -36,11 +37,35 @@ function CalibreTypo:init()
             return {
                 text = _("Fix text"),
                 callback = function()
-                    self:startFix(highlight, index)
+                    self:startFix(Selection.fromHighlight(highlight, index), function()
+                        highlight:onClose()
+                    end)
                 end,
             }
         end)
+        self:registerDictButton()
     end
+end
+
+-- A single selected word opens the dictionary instead of the highlight menu
+function CalibreTypo:registerDictButton()
+    if not (self.ui.dictionary and self.ui.dictionary.addToDictButtons) then
+        return
+    end
+    self.ui.dictionary:addToDictButtons{
+        id = DICT_BUTTON_ID,
+        text = _("Fix text"),
+        conditional = true,
+        -- exclude typed lookups, wikipedia or words picked inside a result
+        show_func = function(dict_popup)
+            return not dict_popup.is_wiki and Selection.fromDictPopup(dict_popup) ~= nil
+        end,
+        callback = function(dict_popup)
+            self:startFix(Selection.fromDictPopup(dict_popup), function()
+                dict_popup:onClose()
+            end)
+        end,
+    }
 end
 
 function CalibreTypo:addToMainMenu(menu_items)
@@ -57,14 +82,13 @@ function CalibreTypo:addToMainMenu(menu_items)
     }
 end
 
-function CalibreTypo:startFix(highlight, index)
-    local selection = Selection.fromHighlight(highlight, index)
+function CalibreTypo:startFix(selection, close)
     if not selection then
         return
     end
     selection.before, selection.after =
         Selection.context(self.ui.document, selection.pos0, selection.pos1, CONTEXT_WORDS)
-    highlight:onClose()
+    close()
 
     EditDialog.show(selection.text, function(replacement)
         self:saveFix(selection, replacement)
